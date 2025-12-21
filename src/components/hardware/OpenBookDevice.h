@@ -20,17 +20,9 @@
 #define OPENBOOK_BUTTONMASK_NEXT (64)
 #define OPENBOOK_BUTTONMASK_LOCK (128)
 
-#ifdef ARDUINO_ARCH_RP2040
-#ifdef ARDUINO_PICO_MAJOR
-// Earlephilhower Arduino-Pico uses standard SPIClass
+// Custom SPI instances for both RP2040 and ESP32
 extern SPIClass* SPI0;
 extern SPIClass* SPI1;
-#else
-// Arduino-mbed uses MbedSPI
-extern MbedSPI* SPI0;
-extern MbedSPI* SPI1;
-#endif
-#endif
 
 #ifdef ARDUINO_ARCH_RP2040
 #define OPEN_BOOK_EPD OpenBook_IL0398
