@@ -1,5 +1,6 @@
 #include "OpenBookDevice.h"
 #include "OpenBook_IL0398.h"
+#include "OpenBook_SSD1683.h"
 
 #ifdef ARDUINO_ARCH_RP2040
 #include "sleep.h"
@@ -73,9 +74,28 @@ OpenBookDevice::OpenBookDevice() {
 }
 
 /**
- @brief Configures the e-ink screen.
+ @brief Configures the e-ink screen with automatic display type detection.
  @param srcs Chip select pin for the SRAM. Pass in OPENBOOK_NOT_PRESENT if you
              have omitted this chip.
+ @param ecs Chip select pin for the e-ink screen.
+ @param edc Data/command pin for the e-ink screen.
+ @param erst Reset pin for the e-ink screen.
+ @param ebsy Busy pin for the e-ink screen.
+ @param spi Address of the SPI bus for the screen and SRAM chip.
+ @param width Native width of the display
+ @param height Native height of the display
+ @returns always returns true for now
+ @note This version uses OPEN_BOOK_DISPLAY_TYPE_DEFAULT which will be resolved
+       at runtime based on SD card configuration or platform defaults.
+*/
+bool OpenBookDevice::configureScreen(int8_t srcs, int8_t ecs, int8_t edc, int8_t erst, int8_t ebsy, SPIClass *spi, int width, int height) {
+    return this->configureScreen(OPEN_BOOK_DISPLAY_TYPE_DEFAULT, srcs, ecs, edc, erst, ebsy, spi, width, height);
+}
+
+/**
+ @brief Configures the e-ink screen with specified display type.
+ @param displayType The type of display driver to use (IL0398, SSD1683, or DEFAULT for auto-detect)
+ @param srcs Chip select pin for the SRAM. Pass in -1 if you have omitted this chip.
  @param ecs Chip select pin for the e-ink screen.
  @param edc Data/command pin for the e-ink screen.
  @param erst Reset pin for the e-ink screen.
@@ -94,8 +114,21 @@ OpenBookDevice::OpenBookDevice() {
         * GxEPD2: https://github.com/ZinggJM/GxEPD2
         * IL0398 Datasheet: https://cdn.sparkfun.com/assets/f/a/9/3/7/4.2in_ePaper_Driver.pdf
 */
-bool OpenBookDevice::configureScreen(int8_t srcs, int8_t ecs, int8_t edc, int8_t erst, int8_t ebsy, SPIClass *spi, int width, int height) {
-    OPEN_BOOK_EPD *display = new OPEN_BOOK_EPD(width, height, edc, erst, ecs, srcs, ebsy, spi);
+bool OpenBookDevice::configureScreen(OpenBookDisplayType displayType, int8_t srcs, int8_t ecs, int8_t edc, int8_t erst, int8_t ebsy, SPIClass *spi, int width, int height) {
+    // If DEFAULT is specified, try to load from SD card config, otherwise use platform default
+    if (displayType == OPEN_BOOK_DISPLAY_TYPE_DEFAULT) {
+        displayType = this->loadDisplayConfig();
+    }
+
+    // Create the appropriate display driver
+    OpenBook_EPD *display = NULL;
+    if (displayType == OPEN_BOOK_DISPLAY_TYPE_SSD1683) {
+        display = new OpenBook_SSD1683(width, height, edc, erst, ecs, srcs, ebsy, spi);
+    } else {
+        // Default to IL0398
+        display = new OpenBook_IL0398(width, height, edc, erst, ecs, srcs, ebsy, spi);
+    }
+
     this->display = display;
 
     return true;
@@ -325,7 +358,7 @@ OpenBookSDCardState OpenBookDevice::sdCardState() {
 /**
  @returns a reference to the e-paper display, or NULL if not configured.
 */
-OPEN_BOOK_EPD * OpenBookDevice::getDisplay() {
+OpenBook_EPD * OpenBookDevice::getDisplay() {
     return this->display;
 }
 
@@ -350,4 +383,59 @@ bool OpenBookDevice::renameFile(const char *oldPath, const char *newPath) {
 
 bool OpenBookDevice::removeFile(const char *path) {
     return this->sd->remove(path);
+}
+
+/**
+ @brief Loads display configuration from SD card
+ @returns the display type to use, or OPEN_BOOK_DISPLAY_TYPE_DEFAULT if no config found
+ @note Reads from /openbook.cfg on the SD card. Format: display=IL0398 or display=SSD1683
+       If the file doesn't exist or can't be read, returns the default for the platform.
+*/
+OpenBookDisplayType OpenBookDevice::loadDisplayConfig() {
+    // Try to open the config file
+    File configFile = this->sd->open("/openbook.cfg", FILE_READ);
+    if (!configFile) {
+        // No config file, use platform default
+        #ifdef ARDUINO_ARCH_RP2040
+        return OPEN_BOOK_DISPLAY_TYPE_IL0398;  // Default for Pico
+        #else
+        return OPEN_BOOK_DISPLAY_TYPE_SSD1683;  // Default for ESP32
+        #endif
+    }
+
+    // Read and parse the config file
+    char line[64];
+    int i = 0;
+    while (configFile.available() && i < 63) {
+        char c = configFile.read();
+        if (c == '\n' || c == '\r') {
+            line[i] = '\0';
+            // Parse the line
+            if (strncmp(line, "display=", 8) == 0) {
+                char *value = line + 8;
+                // Trim whitespace
+                while (*value == ' ' || *value == '\t') value++;
+
+                if (strcmp(value, "SSD1683") == 0) {
+                    configFile.close();
+                    return OPEN_BOOK_DISPLAY_TYPE_SSD1683;
+                } else if (strcmp(value, "IL0398") == 0) {
+                    configFile.close();
+                    return OPEN_BOOK_DISPLAY_TYPE_IL0398;
+                }
+            }
+            i = 0;
+        } else {
+            line[i++] = c;
+        }
+    }
+
+    configFile.close();
+
+    // If we didn't find a valid display setting, use platform default
+    #ifdef ARDUINO_ARCH_RP2040
+    return OPEN_BOOK_DISPLAY_TYPE_IL0398;
+    #else
+    return OPEN_BOOK_DISPLAY_TYPE_SSD1683;
+    #endif
 }
