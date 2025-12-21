@@ -4,8 +4,8 @@
 #ifdef ARDUINO_ARCH_RP2040
 #include "sleep.h"
 
-MbedSPI* SPI0;
-MbedSPI* SPI1;
+SPIClass* SPI0;
+SPIClass* SPI1;
 #else
 #include "driver/rtc_io.h"
 SPIClass *SPI0 = NULL;
@@ -21,8 +21,11 @@ OpenBookDevice::OpenBookDevice() {
     pinMode(23, OUTPUT);
     digitalWrite(23, LOW);
 
-    SPI0 = new MbedSPI(4, 3, 2);
-    SPI1 = new MbedSPI(12, 11, 10);
+    // SPIClass constructor: (spi_inst_t *spi, pin_size_t rx, pin_size_t cs, pin_size_t sck, pin_size_t tx)
+    SPI0 = new SPIClass(spi0, 3, -1, 2, 4);  // MISO=3, CS=-1, SCK=2, MOSI=4
+    SPI0->begin();
+    SPI1 = new SPIClass(spi1, 11, -1, 10, 12);  // MISO=11, CS=-1, SCK=10, MOSI=12
+    SPI1->begin();
     this->configureScreen(-1, 9, 8, 7, 6, SPI1, 300, 400);
     this->configureSD(5, SPI0);
     this->configureBabel(1, SPI0);
