@@ -4,8 +4,15 @@
 #ifdef ARDUINO_ARCH_RP2040
 #include "sleep.h"
 
+#ifdef ARDUINO_PICO_MAJOR
+// Earlephilhower Arduino-Pico uses standard SPIClass
+SPIClass* SPI0;
+SPIClass* SPI1;
+#else
+// Arduino-mbed uses MbedSPI
 MbedSPI* SPI0;
 MbedSPI* SPI1;
+#endif
 #else
 #include "driver/rtc_io.h"
 SPIClass *SPI0 = NULL;
@@ -21,8 +28,15 @@ OpenBookDevice::OpenBookDevice() {
     pinMode(23, OUTPUT);
     digitalWrite(23, LOW);
 
+#ifdef ARDUINO_PICO_MAJOR
+    // Earlephilhower Arduino-Pico
+    SPI0 = new SPIClass(spi0, 2, 3, 4);  // spi0, miso, mosi, sck
+    SPI1 = new SPIClass(spi1, 10, 11, 12);  // spi1, miso, mosi, sck
+#else
+    // Arduino-mbed
     SPI0 = new MbedSPI(4, 3, 2);
     SPI1 = new MbedSPI(12, 11, 10);
+#endif
     this->configureScreen(-1, 9, 8, 7, 6, SPI1, 300, 400);
     this->configureSD(5, SPI0);
     this->configureBabel(1, SPI0);
