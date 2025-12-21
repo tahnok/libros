@@ -4,9 +4,9 @@
 #ifdef ARDUINO_ARCH_RP2040
 #include "sleep.h"
 
-// Internal SPI instances (static to avoid conflict with framework's global SPI1)
-static SPIClass* SPI0;
-static SPIClass* SPI1;
+// Renamed to avoid conflict with framework's global SPI1
+SPIClass* OpenBook_SPI0;
+SPIClass* OpenBook_SPI1;
 #else
 #include "driver/rtc_io.h"
 SPIClass *SPI0 = NULL;
@@ -24,14 +24,14 @@ OpenBookDevice::OpenBookDevice() {
 
     // Create SPI instances with explicit pin configuration
     // SPIClassRP2040 is the concrete class, SPIClass* is the base class pointer
-    SPI0 = new SPIClassRP2040(spi0, 3, -1, 2, 4);  // spi0: MISO=3, CS=-1, SCK=2, MOSI=4
-    SPI0->begin();
+    OpenBook_SPI0 = new SPIClassRP2040(spi0, 3, -1, 2, 4);  // spi0: MISO=3, CS=-1, SCK=2, MOSI=4
+    OpenBook_SPI0->begin();
 
-    SPI1 = new SPIClassRP2040(spi1, 11, -1, 10, 12);  // spi1: MISO=11, CS=-1, SCK=10, MOSI=12
-    SPI1->begin();
-    this->configureScreen(-1, 9, 8, 7, 6, SPI1, 300, 400);
-    this->configureSD(5, SPI0);
-    this->configureBabel(1, SPI0);
+    OpenBook_SPI1 = new SPIClassRP2040(spi1, 11, -1, 10, 12);  // spi1: MISO=11, CS=-1, SCK=10, MOSI=12
+    OpenBook_SPI1->begin();
+    this->configureScreen(-1, 9, 8, 7, 6, OpenBook_SPI1, 300, 400);
+    this->configureSD(5, OpenBook_SPI0);
+    this->configureBabel(1, OpenBook_SPI0);
 
     OpenBookButtonConfig buttonConfig;
     buttonConfig.left_pin = 20;

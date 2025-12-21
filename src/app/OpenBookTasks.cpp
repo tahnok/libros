@@ -141,7 +141,7 @@ bool OpenBookPowerMonitor::run(std::shared_ptr<Application> application) {
 
 bool BurnBabelImage::run(std::shared_ptr<Application> application) {
 #ifdef ARDUINO_ARCH_RP2040
-    static Adafruit_FlashTransport_SPI transport(1, SPI0);
+    static Adafruit_FlashTransport_SPI transport(1, OpenBook_SPI0);
     static Adafruit_SPIFlash flash(&transport);
     if (this->page == -1) {
         flash.begin();

@@ -21,6 +21,12 @@
 #define OPENBOOK_BUTTONMASK_LOCK (128)
 
 #ifdef ARDUINO_ARCH_RP2040
+// Renamed to avoid conflict with framework's global SPI1
+extern SPIClass* OpenBook_SPI0;
+extern SPIClass* OpenBook_SPI1;
+#endif
+
+#ifdef ARDUINO_ARCH_RP2040
 #define OPEN_BOOK_EPD OpenBook_IL0398
 #else
 #define OPEN_BOOK_EPD OpenBook_SSD1683
