@@ -4,8 +4,9 @@
 #ifdef ARDUINO_ARCH_RP2040
 #include "sleep.h"
 
-SPIClass* SPI0;
-SPIClass* SPI1;
+// Internal SPI instances (static to avoid conflict with framework's global SPI1)
+static SPIClass* SPI0;
+static SPIClass* SPI1;
 #else
 #include "driver/rtc_io.h"
 SPIClass *SPI0 = NULL;
