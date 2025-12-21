@@ -11,11 +11,6 @@
 #include "OpenBook_SSD1683.h"
 #include "Adafruit_MCP23008.h"
 
-// Earlephilhower uses SPIClassRP2040, create alias for compatibility
-#ifdef ARDUINO_ARCH_RP2040
-typedef SPIClassRP2040 SPIClass;
-#endif
-
 #define OPENBOOK_BUTTONMASK_LEFT (1)
 #define OPENBOOK_BUTTONMASK_DOWN (2)
 #define OPENBOOK_BUTTONMASK_UP (4)

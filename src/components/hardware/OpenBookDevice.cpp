@@ -22,11 +22,11 @@ OpenBookDevice::OpenBookDevice() {
     digitalWrite(23, LOW);
 
     // Create SPI instances with explicit pin configuration
-    // SPIClass is typedef'd to SPIClassRP2040 for Earlephilhower Arduino-Pico
-    SPI0 = new SPIClass(spi0, 3, -1, 2, 4);  // spi0: MISO=3, CS=-1, SCK=2, MOSI=4
+    // SPIClassRP2040 is the concrete class, SPIClass* is the base class pointer
+    SPI0 = new SPIClassRP2040(spi0, 3, -1, 2, 4);  // spi0: MISO=3, CS=-1, SCK=2, MOSI=4
     SPI0->begin();
 
-    SPI1 = new SPIClass(spi1, 11, -1, 10, 12);  // spi1: MISO=11, CS=-1, SCK=10, MOSI=12
+    SPI1 = new SPIClassRP2040(spi1, 11, -1, 10, 12);  // spi1: MISO=11, CS=-1, SCK=10, MOSI=12
     SPI1->begin();
     this->configureScreen(-1, 9, 8, 7, 6, SPI1, 300, 400);
     this->configureSD(5, SPI0);
