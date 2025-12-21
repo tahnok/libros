@@ -20,9 +20,10 @@
 #define OPENBOOK_BUTTONMASK_NEXT (64)
 #define OPENBOOK_BUTTONMASK_LOCK (128)
 
-// Custom SPI instances for both RP2040 and ESP32
-extern SPIClass* SPI0;
-extern SPIClass* SPI1;
+#ifdef ARDUINO_ARCH_RP2040
+extern MbedSPI* SPI0;
+extern MbedSPI* SPI1;
+#endif
 
 #ifdef ARDUINO_ARCH_RP2040
 #define OPEN_BOOK_EPD OpenBook_IL0398

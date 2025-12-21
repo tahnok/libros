@@ -3,13 +3,14 @@
 
 #ifdef ARDUINO_ARCH_RP2040
 #include "sleep.h"
+
+MbedSPI* SPI0;
+MbedSPI* SPI1;
 #else
 #include "driver/rtc_io.h"
+SPIClass *SPI0 = NULL;
+SPIClass *SPI1 = NULL;
 #endif
-
-// Custom SPI instances for both platforms
-SPIClass* SPI0 = NULL;
-SPIClass* SPI1 = NULL;
 
 OpenBookDevice::OpenBookDevice() {
 #ifdef ARDUINO_ARCH_RP2040
@@ -20,9 +21,8 @@ OpenBookDevice::OpenBookDevice() {
     pinMode(23, OUTPUT);
     digitalWrite(23, LOW);
 
-    // Earlephilhower Arduino-Pico uses SPIClass with hardware SPI instances
-    SPI0 = new SPIClass(spi0, 2, 3, 4);  // spi0, miso, mosi, sck
-    SPI1 = new SPIClass(spi1, 10, 11, 12);  // spi1, miso, mosi, sck
+    SPI0 = new MbedSPI(4, 3, 2);
+    SPI1 = new MbedSPI(12, 11, 10);
     this->configureScreen(-1, 9, 8, 7, 6, SPI1, 300, 400);
     this->configureSD(5, SPI0);
     this->configureBabel(1, SPI0);
