@@ -1,0 +1,16 @@
+# OpenBook Configuration File
+# Place this file as /openbook.cfg on your SD card root directory
+#
+# Display Driver Configuration
+# ----------------------------
+# Specify which e-paper display driver to use:
+#   - IL0398: Original display for Raspberry Pi Pico (default for Pico)
+#   - SSD1683: New display for ESP32-S3 (default for ESP32)
+#
+# This allows you to use the newer SSD1683 display on Pico hardware
+# or the original IL0398 display on ESP32 hardware.
+
+display=IL0398
+
+# To use the SSD1683 display instead, uncomment the line below:
+# display=SSD1683
