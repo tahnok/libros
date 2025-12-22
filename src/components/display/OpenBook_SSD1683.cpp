@@ -357,6 +357,16 @@ void OpenBook_SSD1683::setDisplayMode(OpenBookDisplayMode displayMode) {
 
 /**************************************************************************/
 /*!
+    @brief get the current display mode
+    @returns the current display mode
+*/
+/**************************************************************************/
+OpenBookDisplayMode OpenBook_SSD1683::getDisplayMode() {
+    return this->currentDisplayMode;
+}
+
+/**************************************************************************/
+/*!
     @brief draw a single pixel on the screen
 	@param x the x axis position
 	@param y the y axis position
