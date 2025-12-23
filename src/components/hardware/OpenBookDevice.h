@@ -85,7 +85,7 @@ protected:
     bool configureBabel(int8_t bcs, SPIClass *spi);
     bool configureBabel(const char *partition_label);
     bool configureSD(int8_t sdcs, SPIClass *spi);
-    OpenBookDisplayType loadDisplayConfig();
+    OpenBookDisplayType detectDisplayType(int8_t erst, int8_t ebsy);
 
     OpenBook_EPD *display = NULL;
     BabelTypesetterGFX *typesetter = NULL;
