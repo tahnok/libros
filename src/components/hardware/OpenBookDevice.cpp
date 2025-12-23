@@ -115,9 +115,9 @@ bool OpenBookDevice::configureScreen(int8_t srcs, int8_t ecs, int8_t edc, int8_t
         * IL0398 Datasheet: https://cdn.sparkfun.com/assets/f/a/9/3/7/4.2in_ePaper_Driver.pdf
 */
 bool OpenBookDevice::configureScreen(OpenBookDisplayType displayType, int8_t srcs, int8_t ecs, int8_t edc, int8_t erst, int8_t ebsy, SPIClass *spi, int width, int height) {
-    // If DEFAULT is specified, try to load from SD card config, otherwise use platform default
+    // If DEFAULT is specified, detect the display type by probing the hardware
     if (displayType == OPEN_BOOK_DISPLAY_TYPE_DEFAULT) {
-        displayType = this->loadDisplayConfig();
+        displayType = this->detectDisplayType(erst, ebsy);
     }
 
     // Create the appropriate display driver
@@ -386,53 +386,53 @@ bool OpenBookDevice::removeFile(const char *path) {
 }
 
 /**
- @brief Loads display configuration from SD card
- @returns the display type to use, or OPEN_BOOK_DISPLAY_TYPE_DEFAULT if no config found
- @note Reads from /openbook.cfg on the SD card. Format: display=IL0398 or display=SSD1683
-       If the file doesn't exist or can't be read, returns the default for the platform.
+ @brief Detects the display type by probing the hardware
+ @param erst Reset pin for the e-ink screen
+ @param ebsy Busy pin for the e-ink screen
+ @returns the detected display type
+ @note This works by checking the busy pin polarity after a hardware reset.
+       The IL0398 uses busy=LOW to indicate busy, HIGH to indicate ready.
+       The SSD1683 uses busy=HIGH to indicate busy, LOW to indicate ready.
+       After a hardware reset, once the display is ready:
+       - IL0398: busy pin will be HIGH
+       - SSD1683: busy pin will be LOW
 */
-OpenBookDisplayType OpenBookDevice::loadDisplayConfig() {
-    // Try to open the config file
-    File configFile = this->sd->open("/openbook.cfg", FILE_READ);
-    if (!configFile) {
-        // No config file, use platform default
-        #ifdef ARDUINO_ARCH_RP2040
-        return OPEN_BOOK_DISPLAY_TYPE_IL0398;  // Default for Pico
-        #else
-        return OPEN_BOOK_DISPLAY_TYPE_SSD1683;  // Default for ESP32
-        #endif
+OpenBookDisplayType OpenBookDevice::detectDisplayType(int8_t erst, int8_t ebsy) {
+    // Set up the pins for detection
+    if (erst >= 0) {
+        pinMode(erst, OUTPUT);
+    }
+    if (ebsy >= 0) {
+        pinMode(ebsy, INPUT);
     }
 
-    // Read and parse the config file
-    char line[64];
-    int i = 0;
-    while (configFile.available() && i < 63) {
-        char c = configFile.read();
-        if (c == '\n' || c == '\r') {
-            line[i] = '\0';
-            // Parse the line
-            if (strncmp(line, "display=", 8) == 0) {
-                char *value = line + 8;
-                // Trim whitespace
-                while (*value == ' ' || *value == '\t') value++;
+    // Perform a hardware reset sequence
+    if (erst >= 0) {
+        digitalWrite(erst, HIGH);
+        delay(10);
+        digitalWrite(erst, LOW);
+        delay(10);
+        digitalWrite(erst, HIGH);
+        delay(100);  // Give the display time to initialize
+    }
 
-                if (strcmp(value, "SSD1683") == 0) {
-                    configFile.close();
-                    return OPEN_BOOK_DISPLAY_TYPE_SSD1683;
-                } else if (strcmp(value, "IL0398") == 0) {
-                    configFile.close();
-                    return OPEN_BOOK_DISPLAY_TYPE_IL0398;
-                }
-            }
-            i = 0;
+    // Check the busy pin state to determine display type
+    // IL0398: busy=HIGH when ready (waits for HIGH in busy_wait)
+    // SSD1683: busy=LOW when ready (waits for LOW in busy_wait)
+    if (ebsy >= 0) {
+        // Read the busy pin state after reset
+        bool busyState = digitalRead(ebsy);
+
+        if (busyState == HIGH) {
+            // Busy pin is HIGH after reset - this is IL0398 (ready state)
+            return OPEN_BOOK_DISPLAY_TYPE_IL0398;
         } else {
-            line[i++] = c;
+            // Busy pin is LOW after reset - this is SSD1683 (ready state)
+            return OPEN_BOOK_DISPLAY_TYPE_SSD1683;
         }
     }
 
-    configFile.close();
-
-    // If we didn't find a valid display setting, use platform default
+    // If no busy pin, fall back to platform default
     #ifdef ARDUINO_ARCH_RP2040
     return OPEN_BOOK_DISPLAY_TYPE_IL0398;
     #else
