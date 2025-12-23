@@ -86,7 +86,7 @@ OpenBookDevice::OpenBookDevice() {
  @param height Native height of the display
  @returns always returns true for now
  @note This version uses OPEN_BOOK_DISPLAY_TYPE_DEFAULT which will be resolved
-       at runtime based on SD card configuration or platform defaults.
+       at runtime based on platform defaults or automatic screen detection
 */
 bool OpenBookDevice::configureScreen(int8_t srcs, int8_t ecs, int8_t edc, int8_t erst, int8_t ebsy, SPIClass *spi, int width, int height) {
     return this->configureScreen(OPEN_BOOK_DISPLAY_TYPE_DEFAULT, srcs, ecs, edc, erst, ebsy, spi, width, height);
